@@ -1,0 +1,62 @@
+services:
+  # Сервис базы данных PostgreSQL
+  postgres:
+    image: postgres:16
+    container_name: smart_home_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: student
+      POSTGRES_PASSWORD: student_secure_password
+      POSTGRES_DB: smart_home
+    ports:
+      - "5432:5432"                   # Пробрасываем порт для доступа
+    volumes:
+      - smart_home_postgres:/var/lib/postgresql/data  # Постоянное хранилище данных
+    networks:
+      - smart_home_network            # Сеть для связи с приложением
+    healthcheck:
+      # Проверка готовности базы данных к работе
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s                   # Проверяем каждые 10 секунд
+      timeout: 5s                     # Таймаут проверки
+      retries: 5                      # Количество попыток
+
+  # Сервис приложения (Production)
+  app:
+    build: .                          # Собираем из Dockerfile в текущей директории
+    container_name: smart_home_app
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      APP_ENV: production
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
+      YANDEX_CALLBACK_URL: ${YANDEX_CALLBACK_URL}
+    ports:
+      - "4200:4200"                   # Пробрасываем порт приложения
+    depends_on:
+      postgres:
+        condition: service_healthy    # Ждем пока БД будет готова
+    networks:
+      - smart_home_network
+    
+    # Команда запуска: сначала миграции, потом приложение
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 4200"
+
+# Определяем том для постоянного хранения данных БД
+volumes:
+  smart_home_postgres:
+
+# Определяем сеть для взаимодействия сервисов
+networks:
+  smart_home_network:
