@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: bitnami/mongodb:6.0
+          image: mongo:6
           ports:
             - containerPort: 27017
               name: mongodb
@@ -44,6 +44,7 @@ spec:
                 - "db.adminCommand('ping')"
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 10
           readinessProbe:
             exec:
               command:
@@ -52,6 +53,7 @@ spec:
                 - "db.adminCommand('ping')"
             initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 10
           resources:
             requests:
               memory: "256Mi"
@@ -61,7 +63,7 @@ spec:
               cpu: "500m"
           volumeMounts:
             - name: mongo-data
-              mountPath: /bitnami/mongodb 
+              mountPath: /bitnami/mongodb
   volumeClaimTemplates:
     - metadata:
         name: mongo-data
