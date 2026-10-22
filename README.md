@@ -1,3 +1,3 @@
-# Smart Home & Terrarium Project
+# Smart Home Project
 
 Основной репозиторий для лабораторных работ.
